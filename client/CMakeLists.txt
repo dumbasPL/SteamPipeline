@@ -1,6 +1,7 @@
 add_definitions(-DWIN32_LEAN_AND_MEAN)
 
-file(GLOB_RECURSE SOURCES "*.cpp")
-add_executable(SteamPipelineClient ${SOURCES})
+add_executable(SteamPipelineClient client.cpp main.cpp)
+target_link_libraries(SteamPipelineClient PUBLIC LibSteamPipeline ws2_32)
 
-target_link_libraries(SteamPipelineClient PUBLIC LibSteamPipeline)
+add_library(SteamPipelineClientDll SHARED client.cpp dllmain.cpp)
+target_link_libraries(SteamPipelineClientDll PUBLIC LibSteamPipeline ws2_32)

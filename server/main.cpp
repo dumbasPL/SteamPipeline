@@ -1,7 +1,5 @@
-#include <SteamPipeClient.h>
-#include <iostream>
+#include "server.h"
 
 int main(int, char**) {
-  SteamPipeClient client;
-  std::cout << "Connected: " << client.Connect("nezu") << std::endl;
+  return server::run();
 }

@@ -7,6 +7,7 @@
 #include <format>
 
 SteamPipeServer::SteamPipeServer(const char* ipcName) {
+  // FIXME: add security descriptor
   const auto eventName = std::format("{}_SharedMemLock", ipcName);
   event = CreateEventA(NULL, FALSE, FALSE, eventName.c_str());
   assert(event != NULL);
@@ -29,22 +30,18 @@ SteamPipeServer::~SteamPipeServer() {
   CloseHandle(fileMap);
 }
 
-SteamPipeClient SteamPipeServer::AcceptConnection() {
+std::unique_ptr<SteamPipeClient> SteamPipeServer::AcceptConnection() {
   while (true) {
     switch (sharedMem->MasterState) {
     case 0:
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       break;
-    case 1: {
-      auto x = AcceptConnectionInternal();
-      if (x) {
-        return *x.release();
-      }
-    }
+    case 1:
+      if (auto steamPipeClient = AcceptConnectionInternal())
+        return steamPipeClient;
     case 2:
-      if (lastAccept + std::chrono::seconds(5) < std::chrono::steady_clock::now()) {
+      if (lastAccept + std::chrono::seconds(5) < std::chrono::steady_clock::now())
         Reset();
-      }
       break;
     case 3:
       Reset();
@@ -74,6 +71,7 @@ std::unique_ptr<SteamPipeClient> SteamPipeServer::AcceptConnectionInternal() {
     sharedMem->Success = false;
 
     auto client = std::make_unique<SteamPipeClient>(syncRead);
+    client->remoteProcessId = sharedMem->CLProcessId;
     
     CreatePipe(&client->writePipeRead, &client->writePipeWrite, 0, 0x2000);
     CreatePipe(&client->readPipeRead, &client->readPipeWrite, 0, 0x2000);
@@ -101,6 +99,7 @@ std::unique_ptr<SteamPipeClient> SteamPipeServer::AcceptConnectionInternal() {
   auto client = std::make_unique<SteamPipeClient>(sharedMem->SyncRead, sharedMem->SyncWrite);
   client->writePipeRead = sharedMem->Input;
   client->readPipeWrite = sharedMem->Output;
+  client->remoteProcessId = sharedMem->CLProcessId;
 
   sharedMem->Connected = 1;
   sharedMem->MasterState = 2;
