@@ -2,9 +2,16 @@
 #include <windows.h>
 #include <iostream>
 
+__declspec(dllimport) void DummyServerFunc();
+__declspec(dllimport) void DummyClientFunc();
+
 int main(int, char**) {
   // this is here so that we can easily inject dlls with Koaloader ;)
   LoadLibraryA("d3d9.dll");
+
+  // force our dlls to be loaded
+  DummyServerFunc();
+  DummyClientFunc();
 
   if (!getenv("steam_master_ipc_name_override"))
     SetEnvironmentVariableA("steam_master_ipc_name_override", "nezu");
