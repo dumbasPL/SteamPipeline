@@ -26,4 +26,5 @@ public:
   bool ReadInternal(std::vector<uint8_t> &data);
   bool Read(std::vector<uint8_t> &data);
   bool Write(std::vector<uint8_t> &data);
+  bool Peak(uint8_t* type);
 };

@@ -43,6 +43,7 @@ std::string hexStr(uint8_t* data, int len) {
 typedef void*(__thiscall* ReadPipe_t)(void* ecx, utl_buffer<uint8_t>* buffer);
 ReadPipe_t ReadPipe_o;
 bool __fastcall ReadPipe(void* ecx, TC_ECX utl_buffer<uint8_t>* buffer) {
+  std::cout << "[HOOK] ReadStart" << std::endl;
   bool ret = ReadPipe_o(ecx, buffer);
   std::cout << "[HOOK] Read:  " << hexStr(buffer->memory.memory, buffer->m_Put) << std::endl;
   return ret;
@@ -52,7 +53,8 @@ typedef bool(__thiscall* PeakPipe_t)(void* ecx, uint8_t* command);
 PeakPipe_t PeakPipe_o;
 bool __fastcall PeakPipe(void* ecx, TC_ECX uint8_t* command) {
   bool ret = PeakPipe_o(ecx, command);
-  std::cout << "[HOOK] Peak:  " << ret << " " << (command ? (int)*command : -1) << std::endl;
+  if (ret)
+    std::cout << "[HOOK] Peak:  " << ret << " " << (command ? (int)*command : -1) << std::endl;
   return ret;
 }
 
@@ -66,8 +68,9 @@ bool __fastcall WritePipe(void* ecx, TC_ECX utl_buffer<uint8_t>* buffer, bool no
 typedef bool(__thiscall* WaitMsg_t)(void* ecx, DWORD timeout);
 WaitMsg_t WaitMsg_o;
 bool __fastcall WaitMsg(void* ecx, TC_ECX DWORD timeout) {
+  std::cout << "[HOOK] WaitStart: " << timeout << std::endl;
   bool ret = WaitMsg_o(ecx, timeout);
-  std::cout << "[HOOK] WaitMsg: " << timeout << " " << ret << std::endl;
+  std::cout << "[HOOK] WaitMsg: " << ret << std::endl;
   return ret;
 }
 

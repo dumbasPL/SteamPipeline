@@ -165,17 +165,35 @@ bool SteamPipeClient::ReadInternal(std::vector<uint8_t> &data) {
   return true;
 }
 
-bool SteamPipeClient::Read(std::vector<uint8_t> &data) {
-  WaitForSingleObject(syncRead, INFINITE);
-
-  if (!ReadInternal(data))
+bool SteamPipeClient::Peak(uint8_t* type) {
+  DWORD BytesRead = 0, TotalBytesAvail = 0, BytesLeftThisMessage = 0;
+  MessageHeader header;
+  if (!PeekNamedPipe(writePipeRead, &header, type ? sizeof(header) : 0, &BytesRead, &TotalBytesAvail, &BytesLeftThisMessage))
     return false;
   
-  MessageHeader* header = (MessageHeader*)data.data();
-  // TODO: investigate
-  if (header->type == 7 || header->type == 10)
+  if (!TotalBytesAvail)
+    return false;
+
+  if (type)
+    *type = header.type;
+
+  return true;
+}
+
+#include <iostream>
+
+bool SteamPipeClient::Read(std::vector<uint8_t> &data) {
+  // NOTE: Fuck the event, we are not part of a game loop so 
+  //       we can just wait and block on file reads
+  // WaitForSingleObject(syncRead, INFINITE);
+
+  while (true) {
     if (!ReadInternal(data))
       return false;
+    
+    if (!Peak(NULL))
+      break;
+  }
 
   ResetEvent(syncRead);
   return true;
