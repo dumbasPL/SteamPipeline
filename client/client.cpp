@@ -7,7 +7,7 @@
 #include <iphlpapi.h>
 #include <iostream>
 
-int client::run() {
+int client::run(const char* name, const char* host, const char* port) {
   WSADATA wsaData;
   if (int error = WSAStartup(MAKEWORD(2,2), &wsaData)) {
     std::cout << "WSAStartup failed: " << error << std::endl;
@@ -19,7 +19,7 @@ int client::run() {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
-  SteamPipeServer server("nezu");
+  SteamPipeServer server(name);
   while (true) {
     const std::shared_ptr<SteamPipeClient> steamPipeClient = server.AcceptConnection();
     if (!steamPipeClient) {
@@ -30,8 +30,7 @@ int client::run() {
     std::cout << "Accepted connection from PID: " << steamPipeClient->remoteProcessId << std::endl;
 
     addrinfo* result = nullptr;
-    // FIXME: hardcoded host and port
-    if (int error = getaddrinfo("127.0.0.1", "11728", &hints, &result)) {
+    if (int error = getaddrinfo(host, port, &hints, &result)) {
       std::cout << "getaddrinfo failed: " << error << std::endl;
       continue;
     }

@@ -7,7 +7,7 @@ __declspec(dllexport) void DummyServerFunc() { }
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
   if (fdwReason == DLL_PROCESS_ATTACH) {
     std::thread([hinstDLL](){
-      FreeLibraryAndExitThread(hinstDLL, server::run());
+      FreeLibraryAndExitThread(hinstDLL, server::run("nezu", "11727"));
     }).detach();
   }
   return TRUE;
