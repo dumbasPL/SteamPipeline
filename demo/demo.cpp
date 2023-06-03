@@ -6,6 +6,8 @@ __declspec(dllimport) void DummyServerFunc();
 __declspec(dllimport) void DummyClientFunc();
 
 int main(int, char**) {
+  SetThreadDescription(GetCurrentThread(), L"main");
+
   // this is here so that we can easily inject dlls with Koaloader ;)
   LoadLibraryA("d3d9.dll");
 

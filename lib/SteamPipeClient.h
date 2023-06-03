@@ -1,5 +1,6 @@
 #pragma once
 #include "SteamSharedMemory.h"
+#include <vector>
 
 class SteamPipeClient {
 public:
@@ -22,6 +23,7 @@ public:
   bool Connect(const char *ipcName = "Steam3Master");
   void Destroy();
 
-  bool Read(const void *data, DWORD dataSize, DWORD *bytesRead);
-  bool Write(const void *data, DWORD dataSize);
+  bool ReadInternal(std::vector<uint8_t> &data);
+  bool Read(std::vector<uint8_t> &data);
+  bool Write(std::vector<uint8_t> &data);
 };

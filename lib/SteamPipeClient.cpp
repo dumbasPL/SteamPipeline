@@ -2,6 +2,17 @@
 #include <Windows.h>
 #include <cassert>
 #include <format>
+#include <algorithm>
+#include <array>
+
+#pragma pack(push, 1)
+struct MessageHeader {
+  DWORD size;
+  uint8_t type;
+};
+
+static_assert(sizeof(MessageHeader) == 5);
+#pragma pack(pop)
 
 SteamPipeClient::SteamPipeClient() {
   syncRead = CreateEventA(NULL, TRUE, FALSE, NULL);
@@ -94,7 +105,7 @@ bool SteamPipeClient::Connect(const char *ipcName) {
 
     CloseHandle(writePipeRead);
     writePipeRead = INVALID_HANDLE_VALUE;
-    
+
     CloseHandle(writePipeWrite);
     writePipeWrite = INVALID_HANDLE_VALUE;
 
@@ -128,41 +139,71 @@ void SteamPipeClient::Destroy() {
   remoteProcessId = -1;
 }
 
-bool SteamPipeClient::Read(const void *data, DWORD dataSize, DWORD *bytesRead) {
-  // wait for data to be ready
-  WaitForSingleObject(syncRead, INFINITE);
-  ResetEvent(syncRead);
+inline void PushVector(std::vector<uint8_t> &data, const void *ptr, size_t size) {
+  data.insert(data.end(), (uint8_t*)ptr, (uint8_t*)ptr + size);
+}
 
-  // read size
-  DWORD read, size;
-  if (!ReadFile(writePipeRead, &size, sizeof(size), &read, NULL) || read != sizeof(size))
+bool SteamPipeClient::ReadInternal(std::vector<uint8_t> &data) {
+  DWORD read;
+  MessageHeader header;
+  if (!ReadFile(writePipeRead, &header, sizeof(header), &read, NULL) || read != sizeof(header))
     return false;
-  
-  if (size > dataSize)
-    return false;
-  
-  // read data
-  *bytesRead = 0;
-  while (*bytesRead < size) {
-    if (!ReadFile(writePipeRead, (char*)data + *bytesRead, size - *bytesRead, &read, NULL))
+
+  PushVector(data, &header, sizeof(header));
+
+  DWORD totalRead = 0;
+  DWORD sizeToRead = header.size - sizeof(header.type);
+  std::array<uint8_t, 1024> buffer;
+  while (totalRead < sizeToRead) {
+    DWORD toRead = std::min<DWORD>(sizeToRead - totalRead, buffer.size());
+    if (!ReadFile(writePipeRead, buffer.data(), toRead, &read, NULL))
       return false;
-    *bytesRead += read;
+    PushVector(data, buffer.data(), read);
+    totalRead += read;
   }
 
   return true;
 }
 
-bool SteamPipeClient::Write(const void *data, DWORD dataSize) {
-  DWORD written;
+bool SteamPipeClient::Read(std::vector<uint8_t> &data) {
+  WaitForSingleObject(syncRead, INFINITE);
 
-  // write size
-  if (!WriteFile(readPipeWrite, &dataSize, sizeof(dataSize), &written, NULL) || written != sizeof(dataSize))
+  if (!ReadInternal(data))
     return false;
   
-  // write data
-  if (!WriteFile(readPipeWrite, data, dataSize, &written, NULL) || written != dataSize)
+  MessageHeader* header = (MessageHeader*)data.data();
+  // TODO: investigate
+  if (header->type == 7 || header->type == 10)
+    if (!ReadInternal(data))
+      return false;
+
+  ResetEvent(syncRead);
+  return true;
+}
+
+bool SteamPipeClient::Write(std::vector<uint8_t> &data) {
+  DWORD written;
+
+  MessageHeader* header = (MessageHeader*)data.data();
+  if (!WriteFile(readPipeWrite, header, sizeof(MessageHeader), &written, NULL))
     return false;
 
-  // signal data is ready for reading
-  return SetEvent(syncWrite) != 0;
+  bool notify = true;
+
+  size_t totalWritten = sizeof(MessageHeader);
+  while (totalWritten < data.size()) {
+    DWORD toWrite = std::min<DWORD>(data.size() - totalWritten, notify ? 1024 : 0x100000);
+    if (!WriteFile(readPipeWrite, data.data() + totalWritten, toWrite, &written, NULL))
+      return false;
+    totalWritten += written;
+    if (notify) {
+      SetEvent(syncWrite);
+      notify = false;
+    }
+  }
+
+  if (notify)
+    SetEvent(syncWrite);
+
+  return true;
 }
