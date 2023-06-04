@@ -1,7 +1,17 @@
 add_definitions(-DWIN32_LEAN_AND_MEAN)
 
-add_executable(SteamPipelineServer server.cpp main.cpp)
-target_link_libraries(SteamPipelineServer PUBLIC LibSteamPipeline ws2_32)
+set(SOURCES_SERVER
+  "server.cpp"
+  "ServerPipeline.cpp"
+)
 
-add_library(SteamPipelineServerDll SHARED server.cpp dllmain.cpp)
-target_link_libraries(SteamPipelineServerDll PUBLIC LibSteamPipeline ws2_32)
+set(LIBS_SERVER
+  "LibSteamPipeline"
+  "ws2_32"
+)
+
+add_executable(SteamPipelineServer main.cpp ${SOURCES_SERVER})
+target_link_libraries(SteamPipelineServer PUBLIC ${LIBS_SERVER})
+
+add_library(SteamPipelineServerDll SHARED dllmain.cpp ${SOURCES_SERVER})
+target_link_libraries(SteamPipelineServerDll PUBLIC ${LIBS_SERVER})

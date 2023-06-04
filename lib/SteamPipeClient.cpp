@@ -5,15 +5,6 @@
 #include <algorithm>
 #include <array>
 
-#pragma pack(push, 1)
-struct MessageHeader {
-  DWORD size;
-  uint8_t type;
-};
-
-static_assert(sizeof(MessageHeader) == 5);
-#pragma pack(pop)
-
 SteamPipeClient::SteamPipeClient() {
   syncRead = CreateEventA(NULL, TRUE, FALSE, NULL);
   syncWrite = CreateEventA(NULL, TRUE, FALSE, NULL);

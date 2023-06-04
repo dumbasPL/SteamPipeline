@@ -2,6 +2,20 @@
 #include <iostream>
 #include <array>
 #include <thread>
+#include <functional>
+
+// function that takes a byte vector, splits it to messages, and calls the callback for each message
+bool SplitMessages(std::vector<uint8_t> &data, std::function<bool(uint8_t*, DWORD)> callback) {
+  size_t offset = 0;
+  while (offset < data.size()) {
+    uint8_t* ptr = data.data() + offset;
+    DWORD messageSize = *(DWORD*)ptr;
+    if (!callback(ptr + sizeof(DWORD), messageSize))
+      return false;
+    offset += messageSize + sizeof(DWORD);
+  }
+  return true;
+}
 
 SocketPipeline::SocketPipeline(SOCKET socket, std::shared_ptr<SteamPipeClient> steamPipe) 
   : socket(socket), steamPipe(steamPipe) {}
@@ -32,6 +46,9 @@ bool SocketPipeline::Read() {
     return false;
   }
 
+  if (!SplitMessages(data, [this](uint8_t* packet, DWORD len) { return OnRead(packet, len); }))
+    return false;
+
   if (!steamPipe->Write(data)) {
     std::cout << "Failed to write message to pipe" << std::endl;
     return false;
@@ -46,6 +63,9 @@ bool SocketPipeline::Write() {
     std::cout << "Failed to read message from pipe" << std::endl;
     return false;
   }
+
+  if (!SplitMessages(data, [this](uint8_t* packet, DWORD len) { return OnWrite(packet, len); }))
+    return false;
 
   // host byte order to network byte order
   DWORD networkedSize = htonl(data.size());

@@ -1,11 +1,11 @@
 #include "server.h"
 #include <SteamPipeClient.h>
-#include <SocketPipeline.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <iostream>
+#include "ServerPipeline.h"
 
 int server::run(const char* name, const char* port) {
   WSADATA wsaData;
@@ -76,7 +76,7 @@ int server::run(const char* name, const char* port) {
     }
     std::cout << "Connected to SteamPipeServer with PID: " << steamPipeClient->remoteProcessId << std::endl;
 
-    const auto pipeline = std::make_shared<SocketPipeline>(clientSocket, steamPipeClient);
+    const auto pipeline = std::make_shared<ServerPipeline>(clientSocket, steamPipeClient);
     SocketPipeline::Start(pipeline);
   }
 }

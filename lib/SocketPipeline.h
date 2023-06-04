@@ -13,6 +13,10 @@ public:
   void Destroy();
   bool Read();
   bool Write();
+
+  // NOTE: read and write here is the context for the socket, not the steam pipe
+  virtual bool OnRead(uint8_t* packet, DWORD len) = 0;
+  virtual bool OnWrite(uint8_t* packet, DWORD len) = 0;
   
   static void Start(std::shared_ptr<SocketPipeline> self);
 };

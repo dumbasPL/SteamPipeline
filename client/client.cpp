@@ -1,11 +1,11 @@
 #include "client.h"
 #include <SteamPipeServer.h>
-#include <SocketPipeline.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <iostream>
+#include "ClientPipeline.h"
 
 int client::run(const char* name, const char* host, const char* port) {
   WSADATA wsaData;
@@ -52,7 +52,7 @@ int client::run(const char* name, const char* host, const char* port) {
     // FIXME: try next address if connect fails
     freeaddrinfo(result);
 
-    const auto pipeline = std::make_shared<SocketPipeline>(connectSocket, steamPipeClient);
+    const auto pipeline = std::make_shared<ClientPipeline>(connectSocket, steamPipeClient);
     SocketPipeline::Start(pipeline);
   }
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <windows.h>
+#include <cstdint>
 
 struct SteamSharedMemory {
 public:
@@ -22,3 +23,12 @@ public:
 
     bool Success; // Successfully initialized all handles
 };
+
+#pragma pack(push, 1)
+struct MessageHeader {
+  DWORD size;
+  uint8_t type;
+};
+
+static_assert(sizeof(MessageHeader) == 5);
+#pragma pack(pop)
