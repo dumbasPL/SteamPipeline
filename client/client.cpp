@@ -52,6 +52,11 @@ int client::run(const char* name, const char* host, const char* port) {
     // FIXME: try next address if connect fails
     freeaddrinfo(result);
 
+    BOOL nodelay = TRUE;
+    if (setsockopt(connectSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay)) == SOCKET_ERROR) {
+      std::cout << "setsockopt TCP_NODELAY failed: " << WSAGetLastError() << std::endl;
+    }
+
     const auto pipeline = std::make_shared<ClientPipeline>(connectSocket, steamPipeClient);
     SocketPipeline::Start(pipeline);
   }

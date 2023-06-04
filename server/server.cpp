@@ -64,6 +64,11 @@ int server::run(const char* name, const char* port) {
       return 1;
     }
 
+    BOOL nodelay = TRUE;
+    if (setsockopt(clientSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay)) == SOCKET_ERROR) {
+      std::cout << "setsockopt TCP_NODELAY failed: " << WSAGetLastError() << std::endl;
+    }
+
     char clientIp[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
     std::cout << "Incoming connection from: " << clientIp << std::endl;
