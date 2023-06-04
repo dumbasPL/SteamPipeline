@@ -5,8 +5,14 @@
 __declspec(dllimport) void DummyServerFunc();
 __declspec(dllimport) void DummyClientFunc();
 
+BOOL WINAPI MyHandlerRoutine( DWORD dwCtrlType ) {
+	TerminateProcess(GetCurrentProcess(), 2);
+	return TRUE;
+}
+
 int main(int, char**) {
   SetThreadDescription(GetCurrentThread(), L"main");
+  SetConsoleCtrlHandler(MyHandlerRoutine, TRUE);
 
   // this is here so that we can easily inject dlls with Koaloader ;)
   LoadLibraryA("d3d9.dll");
@@ -25,5 +31,10 @@ int main(int, char**) {
   // SteamAPI_RunCallbacks();
   std::cout << "SteamAPI_IsSteamRunning: " << SteamAPI_IsSteamRunning() << std::endl;
   std::cout << "SteamFriends()->GetPersonaName(): " << SteamFriends()->GetPersonaName() << std::endl;
+
+  while (true) {
+    SteamAPI_RunCallbacks();
+    Sleep(100);
+  }
   return 0;
 }
