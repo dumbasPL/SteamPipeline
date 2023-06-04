@@ -1,8 +1,18 @@
 const { log, error } = require('node:console');
 const net = require('node:net'); 
+const {Transform} = require('node:stream'); 
+const util = require('node:util');
 const PacketReader = require('packet-reader')
-const Transform = require('node:stream').Transform; 
-const chalk = require('chalk'); 
+const chalk = require('chalk');
+
+const {values: args} = util.parseArgs({
+  options: {
+    'host': { type: 'string', short : 'h', default: '127.0.0.1' },
+    'port': { type: 'string', short : 'p', default: '11727' },
+    'listen-port': { type: 'string', short : 'l', default: '11728' },
+  },
+  strict: true,
+})
 
 function addLengthPadding(chunk) {
   const lengthHeader = Buffer.alloc(4);
@@ -12,6 +22,8 @@ function addLengthPadding(chunk) {
 
 var server = net.createServer(socket => {
 	log('client connected from: ' + socket.remoteAddress + ':' + socket.remotePort);
+
+  socket.setNoDelay(true);
 
   const clientReader = new PacketReader();
   const clientTransform = new Transform({
@@ -41,7 +53,9 @@ var server = net.createServer(socket => {
     }
   });
 
-  const client = net.connect(11727, '127.0.0.1', () => {
+  const client = net.connect(parseInt(args['port']), args['host'], () => {
+    client.setNoDelay(true);
+
     socket.pipe(clientTransform).pipe(client);
     client.pipe(serverTransform).pipe(socket);
   })
@@ -58,6 +72,6 @@ var server = net.createServer(socket => {
 });
 
 server.on('error', error);
-
-const PORT = process.env.PORT || 11728;
-server.listen(PORT, '127.0.0.1', () => console.log(`server listening on port ${PORT}`));
+server.listen(parseInt(args['listen-port']), '0.0.0.0', () => {
+  console.log(`server listening on ${server.address().address}:${server.address().port}`);
+});
